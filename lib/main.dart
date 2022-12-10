@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:bloc/bloc.dart';
-import 'dart:math' as math show Random;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:testing_bloc/cubit/counter_cubit.dart';
 
 void main() {
   runApp(const MyApp());
 }
+//*sla
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -12,40 +14,31 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+    return BlocProvider(
+      create: (context) => CounterCubit(),
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          // This is the theme of your application.
+          //
+          // Try running your application with "flutter run". You'll see the
+          // application has a blue toolbar. Then, without quitting the app, try
+          // changing the primarySwatch below to Colors.green and then invoke
+          // "hot reload" (press "r" in the console where you ran "flutter run",
+          // or simply save your changes to "hot reload" in a Flutter IDE).
+          // Notice that the counter didn't reset back to zero; the application
+          // is not restarted.
+          primarySwatch: Colors.blue,
+        ),
+        home: const MyHomePage(title: 'Flutter Demo Home Page'),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-const names = [
-  'Mike',
-  'John',
-  'Angel',
-  'Tobi',
-];
-
-extension RandomElement<T> on Iterable<T> {
-  T getRandomElement() => elementAt(math.Random().nextInt(length));
-}
-
-class NamesCubit extends Cubit<String?> {
-  NamesCubit() : super(null);
-
-  void pickRandomNames() => emit(names.getRandomElement());
+@immutable
+abstract class LoadAction {
+  const LoadAction();
 }
 
 class MyHomePage extends StatefulWidget {
@@ -67,21 +60,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late final NamesCubit cubit;
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    cubit = NamesCubit();
-  }
-
-  @override
-  void dispose() {
-    cubit.close();
-    // TODO: implement dispose
-    super.dispose();
-  }
-
   int _counter = 0;
 
   void _incrementCounter() {
@@ -104,33 +82,53 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          children: [
+            Text(
+              'Counter App',
+              style: TextStyle(fontSize: 30),
+            ),
+            SizedBox(
+              height: 30,
+            ),
+            BlocBuilder<CounterCubit, CounterState>(
+              builder: (context, state) {
+                return Text(
+                  state.counterValue.toString(),
+                  style: TextStyle(
+                    fontSize: 30,
+                  ),
+                );
+              },
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                FloatingActionButton(
+                  onPressed: () {
+                    BlocProvider.of<CounterCubit>(context).decrement();
+                  },
+                  tooltip: 'Decrement',
+                  child: Icon(Icons.remove),
+                ),
+                FloatingActionButton(
+                  onPressed: () {
+                    BlocProvider.of<CounterCubit>(context).increment();
+                  },
+                  tooltip: 'Increment',
+                  child: Icon(Icons.add),
+                ),
+              ],
+            ),
+          ],
         ),
-        body: StreamBuilder<String?>(
-            stream: cubit.stream,
-            builder: (context, snapshot) {
-              final button = TextButton(
-                onPressed: () {
-                  cubit.pickRandomNames();
-                },
-                child: const Text('Pick a random name'),
-              );
-              switch (snapshot.connectionState) {
-                case ConnectionState.none:
-                  return button;
-
-                case ConnectionState.waiting:
-                  return button;
-                case ConnectionState.active:
-                  return Column(
-                    children: [Text(snapshot.data ?? ''), button],
-                  );
-                case ConnectionState.done:
-                  return const SizedBox();
-              }
-            }));
+      ),
+    );
   }
 }
